@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cahier">
+<title>Cahier — Anglais</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<style>
+  :root{
+    --paper: #FBF8F1;
+    --paper-edge: #F2EDDF;
+    --line-blue: #9FB8DC;
+    --line-blue-soft: #C7D6EC;
+    --margin-red: #C4544A;
+    --ink: #223146;
+    --ink-soft: #4A5A72;
+    --pen-red: #B23A32;
+    --pen-red-soft: #D98D86;
+    --pen-green: #4C7A5E;
+    --tab-1: #C4544A;
+    --tab-2: #4C7A5E;
+    --tab-3: #4A6FA5;
+    --tab-4: #B8863B;
+    --tab-5: #3F8F86;
+    --tab-6: #7A5C8E;
+    --tab-7: #A54B70;
+    --shadow: 0 2px 3px rgba(34,49,70,0.06), 0 8px 24px rgba(34,49,70,0.10);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:Georgia, 'Times New Roman', serif;
+    color:var(--ink);
+    background:
+      linear-gradient(var(--paper-edge) 0 100%);
+    min-height:100%;
+    overscroll-behavior:none;
+  }
+  .grid-bg{
+    position:fixed; inset:0; z-index:0;
+    background-color:var(--paper);
+    background-image:
+      linear-gradient(var(--line-blue-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-blue-soft) 1px, transparent 1px);
+    background-size: 100% 28px, 28px 100%;
+    background-position: 0 64px, 0 0;
+  }
+  .margin-line{
+    position:fixed; top:0; bottom:0; left:44px; width:2px;
+    background:var(--margin-red); opacity:0.55; z-index:0;
+  }
+  @media (min-width:520px){ .margin-line{ left:64px; } }
+
+  .app{
+    position:relative; z-index:1;
+    max-width:560px; margin:0 auto;
+    padding: 18px 18px 90px 18px;
+    min-height:100vh;
+  }
+  @media (min-width:520px){ .app{ padding-left:76px; } }
+
+  header.top{
+    display:flex; align-items:baseline; justify-content:space-between;
+    padding: 8px 4px 14px 4px;
+  }
+  h1.brand{
+    font-family:Snell Roundhand, 'Bradley Hand', 'Segoe Script', cursive;
+    font-size:2.4rem; font-weight:700; color:var(--ink);
+    margin:0; line-height:1;
+    transform: rotate(-1deg);
+  }
+  .streak{
+    font-family:'Marker Felt', 'Segoe Print', 'Comic Sans MS', cursive;
+    font-size:0.95rem; color:var(--pen-red);
+    white-space:nowrap;
+  }
+
+  /* Tabs like notebook divider tabs — grid so all themes are visible, no hidden scroll */
+  .tabs{ display:grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap:8px; margin: 6px 0 14px 0; }
+  .tab{
+    text-align:center;
+    font-family:'Marker Felt', 'Segoe Print', 'Comic Sans MS', cursive; font-weight:700; font-size:0.78rem;
+    padding:10px 6px 9px 6px;
+    border-radius:10px 10px 3px 3px;
+    color:#fff; cursor:pointer; border:none;
+    box-shadow: var(--shadow);
+    opacity:0.55;
+    transform: translateY(4px);
+    transition: transform .15s ease, opacity .15s ease;
+    position:relative;
+  }
+  .tab .count{
+    display:block; font-family:Georgia, 'Times New Roman', serif; font-size:0.68rem; font-weight:400; opacity:0.9; margin-top:2px;
+  }
+  .tab.active{ opacity:1; transform:translateY(0); }
+  .tab[data-deck="tenses"]{ background:var(--tab-1); }
+  .tab[data-deck="vocab"]{ background:var(--tab-2); }
+  .tab[data-deck="phrasal"]{ background:var(--tab-3); }
+  .tab[data-deck="irregular"]{ background:var(--tab-4); }
+  .tab[data-deck="prepositions"]{ background:var(--tab-5); }
+  .tab[data-deck="false_friends"]{ background:var(--tab-6); }
+  .tab[data-deck="idioms"]{ background:var(--tab-7); }
+
+  .program-link{
+    text-align:center; margin-bottom:12px;
+  }
+  .program-link button{
+    background:none; border:1px solid rgba(34,49,70,0.18); color:var(--ink-soft);
+    font-family:'Marker Felt', 'Segoe Print', 'Comic Sans MS', cursive; font-size:0.78rem;
+    padding:6px 14px; border-radius:20px; cursor:pointer;
+  }
+
+  .due-banner{
+    font-family:'Marker Felt', 'Segoe Print', 'Comic Sans MS', cursive; font-size:0.85rem; color:var(--ink-soft);
+    text-align:center; margin-bottom:14px;
+  }
+
+  /* Card */
+  .stage{
+    position:relative; height:340px; margin: 6px 0 20px 0;
+    perspective: 1400px;
+  }
+  .card{
+    position:absolute; inset:0;
+    border-radius:6px;
+    cursor:pointer;
+    transform-style:preserve-3d;
+    transition: transform .5s cubic-bezier(.2,.8,.25,1);
+  }
+  .card.flipped{ transform: rotateY(180deg); }
+  .face{
+    position:absolute; inset:0;
+    backface-visibility:hidden;
+    border-radius:6px;
+    background:var(--paper);
+    box-shadow: var(--shadow);
+    border:1px solid rgba(34,49,70,0.08);
+    display:flex; flex-direction:column;
+    padding:26px 24px;
+    background-image:
+      linear-gradient(var(--line-blue-soft) 1px, transparent 1px);
+    background-size: 100% 26px;
+    background-position: 0 46px;
+  }
+  .face.back{ transform: rotateY(180deg); }
+  .face .kicker{
+    font-family:'Marker Felt', 'Segoe Print', 'Comic Sans MS', cursive; font-size:0.72rem; letter-spacing:0.04em;
+    text-transform:uppercase; color: var(--ink-soft); opacity:0.7;
+    margin-bottom:14px;
+  }
+  .face .content{
+    flex:1; display:flex; align-items:center; justify-content:center;
+    text-align:center; font-size:1.5rem; line-height:1.35;
+    font-weight:600; color:var(--ink);
+  }
+  .face.back .content{ color: var(--pen-red); font-family:'Marker Felt', 'Segoe Print', 'Comic Sans MS', cursive; font-weight:400; font-size:1.35rem; }
+  .face .example{
+    font-family:Georgia, 'Times New Roman', serif; font-style:italic; font-size:0.95rem;
+    color:var(--ink-soft); text-align:center; margin-top:6px;
+  }
+  .face .hint{
+    text-align:center; font-family:'Marker Felt', 'Segoe Print', 'Comic Sans MS', cursive; font-size:0.78rem;
+    color:var(--ink-soft); opacity:0.55; margin-top:10px;
+  }
+  .level-dots{ position:absolute; top:14px; right:16px; display:flex; gap:4px; }
+  .level-dots span{ width:6px; height:6px; border-radius:50%; background:var(--line-blue-soft); }
+  .level-dots span.on{ background: var(--pen-red-soft); }
+
+  .empty-state{
+    height:340px; display:flex; align-items:center; justify-content:center;
+    flex-direction:column; text-align:center; gap:10px; color:var(--ink-soft);
+  }
+  .empty-state .big{ font-family:Snell Roundhand, 'Bradley Hand', 'Segoe Script', cursive; font-size:1.8rem; color:var(--ink); transform:rotate(-1deg); }
+  .empty-state button{ margin-top:6px; }
+
+  /* Answer buttons */
+  .answers{ display:flex; gap:10px; }
+  .answers button{
+    flex:1; padding:14px 6px; border-radius:8px; border:none;
+    font-family:'Marker Felt', 'Segoe Print', 'Comic Sans MS', cursive; font-weight:700; font-size:0.95rem;
+    color:#fff; cursor:pointer; box-shadow:var(--shadow);
+    transition: transform .1s ease;
+  }
+  .answers button:active{ transform: scale(0.96); }
+  .answers button.again{ background:#A14840; }
+  .answers button.good{ background:#4A6FA5; }
+  .answers button.easy{ background:#4C7A5E; }
+  .answers.hidden{ visibility:hidden; }
+
+  .flip-hint{ text-align:center; font-family:'Marker Felt', 'Segoe Print', 'Comic Sans MS', cursive; font-size:0.85rem; color:var(--ink-soft); margin-top:10px; opacity:0.7; }
+
+  /* FAB + manage */
+  .fab{
+    position:fixed; right:20px; bottom:20px; z-index:5;
+    width:54px; height:54px; border-radius:50%;
+    background:var(--pen-red); color:#fff; border:none;
+    font-size:1.6rem; box-shadow: var(--shadow); cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .manage-link{
+    position:fixed; left:20px; bottom:20px; z-index:5;
+    font-family:'Marker Felt', 'Segoe Print', 'Comic Sans MS', cursive; font-size:0.85rem; color:var(--ink-soft);
+    background:var(--paper); border:1px solid rgba(34,49,70,0.1);
+    padding:10px 14px; border-radius:20px; box-shadow:var(--shadow);
+    cursor:pointer;
+  }
+
+  /* Modal */
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(34,49,70,0.35); z-index:10;
+    display:flex; align-items:flex-end; justify-content:center;
+  }
+  @media (min-width:520px){ .modal-backdrop{ align-items:center; } }
+  .modal{
+    background:var(--paper); width:100%; max-width:520px;
+    border-radius:16px 16px 0 0; padding:22px 20px 26px 20px;
+    max-height:85vh; overflow-y:auto;
+    box-shadow: 0 -8px 30px rgba(0,0,0,0.2);
+  }
+  @media (min-width:520px){ .modal{ border-radius:16px; } }
+  .modal h2{ font-family:Snell Roundhand, 'Bradley Hand', 'Segoe Script', cursive; font-size:1.8rem; margin:0 0 14px 0; color:var(--ink); }
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-family:'Marker Felt', 'Segoe Print', 'Comic Sans MS', cursive; font-size:0.8rem; color:var(--ink-soft); margin-bottom:5px; }
+  .field select, .field input, .field textarea{
+    width:100%; padding:10px 12px; border-radius:8px; border:1px solid rgba(34,49,70,0.18);
+    font-family:Georgia, 'Times New Roman', serif; font-size:1rem; background:#fff; color:var(--ink);
+  }
+  .field textarea{ resize:vertical; min-height:50px; }
+  .modal-actions{ display:flex; gap:10px; margin-top:18px; }
+  .modal-actions button{
+    flex:1; padding:12px; border-radius:8px; border:none; font-family:'Marker Felt', 'Segoe Print', 'Comic Sans MS', cursive;
+    font-weight:700; cursor:pointer; font-size:0.95rem;
+  }
+  .btn-primary{ background:var(--pen-red); color:#fff; }
+  .btn-secondary{ background:transparent; color:var(--ink-soft); border:1px solid rgba(34,49,70,0.18) !important; }
+  .modal-close{ float:right; background:none; border:none; font-size:1.3rem; color:var(--ink-soft); cursor:pointer; }
+
+  .manage-list{ margin-top:6px; }
+  .manage-item{
+    display:flex; justify-content:space-between; align-items:flex-start; gap:10px;
+    padding:10px 0; border-bottom:1px solid rgba(34,49,70,0.08);
+  }
+  .manage-item .txt{ font-size:0.92rem; }
+  .manage-item .txt b{ color:var(--ink); }
+  .manage-item .txt span{ display:block; color:var(--ink-soft); font-size:0.85rem; }
+  .manage-item button{ background:none; border:none; color:var(--pen-red); font-size:1.1rem; cursor:pointer; padding:4px; }
+  .deck-picker{ display:flex; gap:8px; margin-bottom:14px; }
+  .deck-picker button{
+    flex:1; padding:8px; border-radius:8px; border:1px solid rgba(34,49,70,0.15);
+    background:#fff; font-family:'Marker Felt', 'Segoe Print', 'Comic Sans MS', cursive; font-size:0.82rem; cursor:pointer; color:var(--ink-soft);
+  }
+  .deck-picker button.active{ background:var(--ink); color:#fff; border-color:var(--ink); }
+
+  .toast{
+    position:fixed; bottom:88px; left:50%; transform:translateX(-50%);
+    background:var(--ink); color:#fff; padding:9px 18px; border-radius:20px;
+    font-family:'Marker Felt', 'Segoe Print', 'Comic Sans MS', cursive; font-size:0.85rem; z-index:20; opacity:0;
+    transition:opacity .25s ease; pointer-events:none;
+  }
+  .toast.show{ opacity:0.95; }
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="margin-line"></div>
+
+<div class="app">
+  <header class="top">
+    <h1 class="brand">Mon cahier d'anglais</h1>
+    <div class="streak" id="streakLabel"></div>
+  </header>
+
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-deck="tenses">Concordance<span class="count" id="cnt-tenses"></span></button>
+    <button class="tab" data-deck="vocab">Vocabulaire<span class="count" id="cnt-vocab"></span></button>
+    <button class="tab" data-deck="phrasal">Phrasal verbs<span class="count" id="cnt-phrasal"></span></button>
+    <button class="tab" data-deck="irregular">Verbes irr.<span class="count" id="cnt-irregular"></span></button>
+    <button class="tab" data-deck="prepositions">Prépositions<span class="count" id="cnt-prepositions"></span></button>
+    <button class="tab" data-deck="false_friends">Faux amis<span class="count" id="cnt-false_friends"></span></button>
+    <button class="tab" data-deck="idioms">Idiomes<span class="count" id="cnt-idioms"></span></button>
+  </div>
+
+  <div class="program-link"><button id="programBtn">📅 Programme &amp; score</button></div>
+
+  <div class="due-banner" id="dueBanner">Chargement…</div>
+
+  <div id="stageWrap"></div>
+
+  <div class="answers hidden" id="answers">
+    <button class="again" id="btnAgain">À revoir</button>
+    <button class="good" id="btnGood">Bien</button>
+    <button class="easy" id="btnEasy">Facile</button>
+  </div>
+  <div class="flip-hint" id="flipHint">Touche la carte pour retourner</div>
+</div>
+
+<div class="manage-link" id="manageBtn">Gérer les cartes</div>
+<div style="position:fixed; right:20px; bottom:82px; z-index:5; font-family:Georgia,serif; font-size:0.68rem; color:rgba(34,49,70,0.35);">v2026-09-05c</div>
+<button class="fab" id="addBtn" title="Ajouter une carte">+</button>
+
+<div id="modalRoot"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+window.addEventListener('error', function(e){
+  try{
+    var box = document.createElement('div');
+    box.style.cssText = 'position:fixed;inset:0;background:#fff;color:#a00;padding:20px;font-family:monospace;font-size:13px;white-space:pre-wrap;z-index:9999;overflow:auto;';
+    box.textContent = 'Erreur : ' + (e.message || 'inconnue') +
+      '\nFichier : ' + (e.filename || '?') +
+      '\nLigne : ' + (e.lineno || '?') + ':' + (e.colno || '?') +
+      (e.error && e.error.stack ? '\n\n' + e.error.stack : '');
+    document.body.appendChild(box);
+  }catch(_){}
+});
+(function(){
+  const DECKS = {
+    tenses: { label:'Concordance des temps' },
+    vocab: { label:'Vocabulaire' },
+    phrasal: { label:'Phrasal verbs' },
+    irregular: { label:'Verbes irréguliers' },
+    prepositions: { label:'Prépositions dépendantes' },
+    false_friends: { label:'Faux amis' },
+    idioms: { label:'Expressions idiomatiques' }
+  };
+
+  const SEED = [
+    // Concordance des temps — reported speech / sequence of tenses / conditionnels
+    {deck:'tenses', front:"Discours direct : « I am tired. »\nStyle indirect : She said (that) she ___ tired.", back:"was", example:"Présent → prétérit quand le verbe introducteur est au passé.", level:0, due:0},
+    {deck:'tenses', front:"« I will call you. »\nHe said he ___ call me.", back:"would", example:"will → would", level:0, due:0},
+    {deck:'tenses', front:"« I have finished. »\nShe told me she ___ finished.", back:"had", example:"present perfect → past perfect (had + participe passé)", level:0, due:0},
+    {deck:'tenses', front:"« I can swim. »\nHe said he ___ swim.", back:"could", example:"can → could", level:0, due:0},
+    {deck:'tenses', front:"« I am working. »\nShe said she ___ working.", back:"was", example:"present continuous → past continuous", level:0, due:0},
+    {deck:'tenses', front:"« I saw him yesterday. »\nHe said he ___ him the day before.", back:"had seen", example:"prétérit → past perfect ; yesterday → the day before", level:0, due:0},
+    {deck:'tenses', front:"« I must leave. »\nShe said she ___ leave.", back:"had to", example:"must → had to", level:0, due:0},
+    {deck:'tenses', front:"If + prétérit, ... would + base verbale : quel type de condition ?", back:"Hypothèse peu probable ou irréelle dans le présent/futur (2e conditionnel)", example:"If I had more time, I would travel more.", level:0, due:0},
+    {deck:'tenses', front:"If + past perfect, ... would have + participe passé : quel type de condition ?", back:"Regret / irréel dans le passé (3e conditionnel)", example:"If I had known, I would have called you.", level:0, due:0},
+    {deck:'tenses', front:"« Where do you live? »\nHe asked me where ___.", back:"I lived", example:"Question indirecte : pas d'inversion, present → past", level:0, due:0},
+    {deck:'tenses', front:"Le prétérit exprime une action... (2 caractéristiques)", back:"Terminée, à un moment précis et révolu du passé", example:"I visited Paris in 2019.", level:0, due:0},
+    {deck:'tenses', front:"Le present perfect exprime une action...", back:"Passée mais liée au présent, ou sans moment précisé", example:"I have visited Paris three times.", level:0, due:0},
+    {deck:'tenses', front:"If + présent, ... will + base verbale : quel type de condition ?", back:"Hypothèse réaliste dans le futur (1er conditionnel)", example:"If it rains, I will stay home.", level:0, due:0},
+    {deck:'tenses', front:"« Are you coming? »\nHe asked if ___.", back:"I was coming", example:"Question fermée en style indirect : if/whether + sujet + verbe", level:0, due:0},
+    {deck:'tenses', front:"« Don't touch that! »\nHe told me ___ touch it.", back:"not to", example:"Impératif négatif → to + BV devient not to + BV", level:0, due:0},
+    {deck:'tenses', front:"« Close the door. »\nShe told him ___ the door.", back:"to close", example:"Impératif → to + base verbale en discours indirect", level:0, due:0},
+    {deck:'tenses', front:"« I went there last week. »\nHe said he ___ there the week before.", back:"had gone", example:"prétérit → past perfect ; last week → the week before", level:0, due:0},
+    {deck:'tenses', front:"« Tomorrow » devient ___ en discours indirect (si rapporté un autre jour).", back:"the next day / the following day", example:"He said he would call the next day.", level:0, due:0},
+    {deck:'tenses', front:"« Now » devient ___ en discours indirect.", back:"then / at that time", example:"She said she was busy then.", level:0, due:0},
+    {deck:'tenses', front:"« Here » devient souvent ___ en discours indirect.", back:"there", example:"He said he would wait there.", level:0, due:0},
+    {deck:'tenses', front:"« This » devient souvent ___ en discours indirect.", back:"that", example:"She said that book was hers.", level:0, due:0},
+    {deck:'tenses', front:"Quand utilise-t-on le past perfect continuous ?", back:"Pour une action en cours avant un autre moment du passé", example:"I had been working for two hours when she called.", level:0, due:0},
+    {deck:'tenses', front:"« I might come. »\nHe said he ___ come.", back:"might", example:"might reste might (ne change pas) en concordance des temps", level:0, due:0},
+    {deck:'tenses', front:"« I should call her. »\nHe said he ___ call her.", back:"should", example:"should reste should en concordance des temps", level:0, due:0},
+    {deck:'tenses', front:"Quelle structure pour un fait toujours vrai en discours indirect ?", back:"On peut garder le présent même si le verbe introducteur est au passé", example:"She said the Earth is round.", level:0, due:0},
+    {deck:'tenses', front:"« I've been waiting for an hour. »\nHe said he ___ waiting for an hour.", back:"had been", example:"present perfect continuous → past perfect continuous", level:0, due:0},
+    {deck:'tenses', front:"Différence entre 'since' et 'for' avec le present perfect ?", back:"since + point de départ, for + durée", example:"since 2020 / for three years", level:0, due:0},
+    {deck:'tenses', front:"« I'm going to visit her. »\nHe said he ___ going to visit her.", back:"was", example:"be going to au présent → was/were going to", level:0, due:0},
+    {deck:'tenses', front:"Le futur simple 'will' devient ___ dans un récit au passé (non-discours rapporté).", back:"would (futur dans le passé)", example:"He knew she would arrive soon.", level:0, due:0},
+    {deck:'tenses', front:"Quand n'applique-t-on PAS le backshift (recul des temps) ?", back:"Quand le verbe introducteur est au présent, ou pour une vérité générale", example:"She says she is tired. / He said water boils at 100°C.", level:0, due:0},
+    {deck:'tenses', front:"« Yesterday » devient ___ en discours indirect.", back:"the day before / the previous day", example:"He said he had called the day before.", level:0, due:0},
+    {deck:'tenses', front:"Quelle est la structure du 3e conditionnel mixte (regret passé, conséquence présente) ?", back:"If + past perfect, ... would + base verbale", example:"If I had studied medicine, I would be a doctor now.", level:0, due:0},
+    {deck:'tenses', front:"« I'll have finished by 6pm. »\nHe said he ___ finished by 6pm.", back:"would have", example:"future perfect → would have + participe passé", level:0, due:0},
+    {deck:'tenses', front:"Structure du zéro conditionnel (vérité générale) ?", back:"If + présent, ... présent", example:"If you heat ice, it melts.", level:0, due:0},
+    {deck:'tenses', front:"« Next month » devient ___ en discours indirect.", back:"the following month", example:"She said she would travel the following month.", level:0, due:0},
+    {deck:'tenses', front:"Pourquoi dit-on 'I wish I knew' et non 'I wish I know' ?", back:"Après 'I wish' pour un regret présent, on utilise le prétérit modal", example:"I wish I knew the answer.", level:0, due:0},
+
+    // Vocabulaire
+    {deck:'vocab', front:"achever, mener à bien", back:"to accomplish", example:"She accomplished her goal.", level:0, due:0},
+    {deck:'vocab', front:"davantage, en outre", back:"furthermore", example:"Furthermore, the results were significant.", level:0, due:0},
+    {deck:'vocab', front:"malgré", back:"despite / in spite of", example:"Despite the rain, we went out.", level:0, due:0},
+    {deck:'vocab', front:"faire face à, affronter", back:"to face / to cope with", example:"She had to cope with a lot of stress.", level:0, due:0},
+    {deck:'vocab', front:"un défi", back:"a challenge", example:"It was a real challenge.", level:0, due:0},
+    {deck:'vocab', front:"souligner, insister sur", back:"to emphasize / to highlight", example:"He emphasized the importance of practice.", level:0, due:0},
+    {deck:'vocab', front:"un aperçu", back:"an overview / an insight", example:"This gives a good overview of the topic.", level:0, due:0},
+    {deck:'vocab', front:"répandu, courant", back:"widespread / common", example:"This is a widespread problem.", level:0, due:0},
+    {deck:'vocab', front:"une lacune, un manque", back:"a gap / a shortage", example:"There's a gap in the market.", level:0, due:0},
+    {deck:'vocab', front:"néanmoins", back:"nevertheless / nonetheless", example:"Nevertheless, we kept going.", level:0, due:0},
+    {deck:'vocab', front:"par conséquent", back:"therefore / as a result", example:"Therefore, we changed our plans.", level:0, due:0},
+    {deck:'vocab', front:"une conséquence", back:"a consequence / an outcome", example:"That had serious consequences.", level:0, due:0},
+    {deck:'vocab', front:"efficace", back:"efficient / effective", example:"This method is very efficient.", level:0, due:0},
+    {deck:'vocab', front:"fiable", back:"reliable", example:"He's a reliable colleague.", level:0, due:0},
+    {deck:'vocab', front:"pertinent, approprié", back:"relevant", example:"This information is not relevant.", level:0, due:0},
+    {deck:'vocab', front:"tenir compte de", back:"to take into account", example:"We must take the cost into account.", level:0, due:0},
+    {deck:'vocab', front:"sous-estimer / surestimer", back:"to underestimate / to overestimate", example:"Don't underestimate the risk.", level:0, due:0},
+    {deck:'vocab', front:"un obstacle", back:"an obstacle / a hurdle", example:"They overcame every obstacle.", level:0, due:0},
+    {deck:'vocab', front:"exiger, requérir", back:"to require", example:"This job requires patience.", level:0, due:0},
+    {deck:'vocab', front:"une enquête", back:"a survey / an investigation", example:"They conducted a survey.", level:0, due:0},
+    {deck:'vocab', front:"à grande échelle", back:"large-scale / widespread", example:"A large-scale study.", level:0, due:0},
+    {deck:'vocab', front:"s'améliorer", back:"to improve", example:"His English has improved a lot.", level:0, due:0},
+    {deck:'vocab', front:"empirer, se dégrader", back:"to worsen / to deteriorate", example:"The situation worsened quickly.", level:0, due:0},
+    {deck:'vocab', front:"un point de vue", back:"a point of view / a standpoint", example:"From my point of view, it's fair.", level:0, due:0},
+    {deck:'vocab', front:"selon, d'après", back:"according to", example:"According to the report, sales rose.", level:0, due:0},
+    {deck:'vocab', front:"une preuve", back:"evidence / proof", example:"There's no evidence for that claim.", level:0, due:0},
+    {deck:'vocab', front:"un avantage / un inconvénient", back:"an advantage / a drawback", example:"Every option has drawbacks.", level:0, due:0},
+    {deck:'vocab', front:"étroitement lié", back:"closely related / linked", example:"These issues are closely related.", level:0, due:0},
+    {deck:'vocab', front:"une tendance", back:"a trend", example:"There's a growing trend towards remote work.", level:0, due:0},
+    {deck:'vocab', front:"provoquer, engendrer", back:"to trigger / to cause", example:"Stress can trigger headaches.", level:0, due:0},
+    {deck:'vocab', front:"un choix judicieux", back:"a wise choice / a sound choice", example:"That was a wise choice.", level:0, due:0},
+    {deck:'vocab', front:"remettre en question", back:"to question / to challenge", example:"She questioned the results.", level:0, due:0},
+    {deck:'vocab', front:"parvenir à un accord", back:"to reach an agreement", example:"They finally reached an agreement.", level:0, due:0},
+    {deck:'vocab', front:"un objectif", back:"a goal / an objective", example:"Our main goal is customer satisfaction.", level:0, due:0},
+    {deck:'vocab', front:"significatif, non négligeable", back:"significant", example:"A significant improvement.", level:0, due:0},
+    {deck:'vocab', front:"dans l'ensemble", back:"overall / on the whole", example:"Overall, the results were positive.", level:0, due:0},
+
+    // Phrasal verbs — phrases à trous
+    {deck:'phrasal', front:"abandonner\nDon't give ___ on your dreams.", back:"up", example:"give up = abandonner", level:0, due:0},
+    {deck:'phrasal', front:"attendre avec impatience\nI'm looking ___ the holidays.", back:"forward to", example:"look forward to = attendre avec impatience", level:0, due:0},
+    {deck:'phrasal', front:"reporter\nStop putting ___ your homework.", back:"off", example:"put off = reporter", level:0, due:0},
+    {deck:'phrasal', front:"comprendre, résoudre\nI can't figure ___ how this works.", back:"out", example:"figure out = comprendre, résoudre", level:0, due:0},
+    {deck:'phrasal', front:"trouver (une idée)\nShe came ___ a great idea.", back:"up with", example:"come up with = trouver (une idée)", level:0, due:0},
+    {deck:'phrasal', front:"manquer de\nWe ran ___ milk.", back:"out of", example:"run out of = manquer de", level:0, due:0},
+    {deck:'phrasal', front:"bien s'entendre avec\nI get ___ my colleagues.", back:"along with", example:"get along with = bien s'entendre avec", level:0, due:0},
+    {deck:'phrasal', front:"refuser\nHe turned ___ the job offer.", back:"down", example:"turn down = refuser", level:0, due:0},
+    {deck:'phrasal', front:"évoquer (un sujet)\nShe brought ___ an interesting point.", back:"up", example:"bring up = évoquer", level:0, due:0},
+    {deck:'phrasal', front:"ressembler à (un parent)\nHe takes ___ his father.", back:"after", example:"take after = ressembler à", level:0, due:0},
+    {deck:'phrasal', front:"réaliser, effectuer\nThey carried ___ the plan perfectly.", back:"out", example:"carry out = réaliser", level:0, due:0},
+    {deck:'phrasal', front:"mettre en place\nWe set ___ the meeting for Monday.", back:"up", example:"set up = mettre en place", level:0, due:0},
+    {deck:'phrasal', front:"gérer, s'occuper de\nI need to deal ___ this problem.", back:"with", example:"deal with = gérer", level:0, due:0},
+    {deck:'phrasal', front:"faire remarquer\nShe pointed ___ a mistake.", back:"out", example:"point out = faire remarquer", level:0, due:0},
+    {deck:'phrasal', front:"s'arranger, fonctionner\nEverything worked ___ fine.", back:"out", example:"work out = s'arranger", level:0, due:0},
+    {deck:'phrasal', front:"tomber en panne\nThe car broke ___ on the highway.", back:"down", example:"break down = tomber en panne", level:0, due:0},
+    {deck:'phrasal', front:"provoquer, entraîner\nThe reform brought ___ big changes.", back:"about", example:"bring about = provoquer", level:0, due:0},
+    {deck:'phrasal', front:"annuler\nThey called ___ the meeting.", back:"off", example:"call off = annuler", level:0, due:0},
+    {deck:'phrasal', front:"rattraper (son retard)\nI need to catch ___ my sleep.", back:"up on", example:"catch up on = rattraper", level:0, due:0},
+    {deck:'phrasal', front:"vérifier\nCheck ___ this new app.", back:"out", example:"check out = vérifier", level:0, due:0},
+    {deck:'phrasal', front:"tomber sur, rencontrer par hasard\nI came ___ an old photo.", back:"across", example:"come across = tomber sur", level:0, due:0},
+    {deck:'phrasal', front:"compter sur\nYou can count ___ me.", back:"on", example:"count on = compter sur", level:0, due:0},
+    {deck:'phrasal', front:"réduire (sa consommation de)\nI'm cutting ___ sugar.", back:"down on", example:"cut down on = réduire", level:0, due:0},
+    {deck:'phrasal', front:"finir par\nWe ended ___ staying home.", back:"up", example:"end up = finir par", level:0, due:0},
+    {deck:'phrasal', front:"remplir (un formulaire)\nPlease fill ___ the form.", back:"in", example:"fill in = remplir", level:0, due:0},
+    {deck:'phrasal', front:"découvrir, apprendre\nI found ___ the truth.", back:"out", example:"find out = découvrir", level:0, due:0},
+    {deck:'phrasal', front:"s'en tirer sans conséquence\nHe got ___ lying.", back:"away with", example:"get away with = s'en tirer", level:0, due:0},
+    {deck:'phrasal', front:"se remettre de\nIt took months to get ___ the flu.", back:"over", example:"get over = se remettre de", level:0, due:0},
+    {deck:'phrasal', front:"révéler\nDon't give ___ the ending.", back:"away", example:"give away = révéler", level:0, due:0},
+    {deck:'phrasal', front:"traverser (une épreuve)\nShe's going ___ a hard time.", back:"through", example:"go through = traverser", level:0, due:0},
+    {deck:'phrasal', front:"attendre, patienter\nHold ___ a second, please.", back:"on", example:"hold on = attendre", level:0, due:0},
+    {deck:'phrasal', front:"suivre le rythme de\nIt's hard to keep ___ the news.", back:"up with", example:"keep up with = suivre le rythme", level:0, due:0},
+    {deck:'phrasal', front:"omettre\nYou left ___ an important detail.", back:"out", example:"leave out = omettre", level:0, due:0},
+    {deck:'phrasal', front:"examiner, enquêter sur\nWe'll look ___ the issue.", back:"into", example:"look into = examiner", level:0, due:0},
+    {deck:'phrasal', front:"compenser\nHe tried to make ___ his mistake.", back:"up for", example:"make up for = compenser", level:0, due:0},
+    {deck:'phrasal', front:"réussir (qqch de difficile)\nThey pulled ___ an amazing win.", back:"off", example:"pull off = réussir", level:0, due:0},
+    {deck:'phrasal', front:"supporter, tolérer\nI can't put ___ this noise.", back:"up with", example:"put up with = supporter", level:0, due:0},
+    {deck:'phrasal', front:"exclure (une possibilité)\nDoctors ruled ___ any serious illness.", back:"out", example:"rule out = exclure", level:0, due:0},
+    {deck:'phrasal', front:"se démarquer\nHer work really stands ___.", back:"out", example:"stand out = se démarquer", level:0, due:0},
+    {deck:'phrasal', front:"assumer, accepter (une tâche)\nShe took ___ more responsibilities.", back:"on", example:"take on = assumer", level:0, due:0},
+    {deck:'phrasal', front:"s'avérer, se révéler\nIt turned ___ to be a great idea.", back:"out", example:"turn out = s'avérer", level:0, due:0},
+
+    // Verbes irréguliers (base — prétérit — participe passé)
+    {deck:'irregular', front:"be", back:"was/were — been", example:"être", level:0, due:0},
+    {deck:'irregular', front:"begin", back:"began — begun", example:"commencer", level:0, due:0},
+    {deck:'irregular', front:"break", back:"broke — broken", example:"casser", level:0, due:0},
+    {deck:'irregular', front:"bring", back:"brought — brought", example:"apporter", level:0, due:0},
+    {deck:'irregular', front:"build", back:"built — built", example:"construire", level:0, due:0},
+    {deck:'irregular', front:"buy", back:"bought — bought", example:"acheter", level:0, due:0},
+    {deck:'irregular', front:"catch", back:"caught — caught", example:"attraper", level:0, due:0},
+    {deck:'irregular', front:"choose", back:"chose — chosen", example:"choisir", level:0, due:0},
+    {deck:'irregular', front:"come", back:"came — come", example:"venir", level:0, due:0},
+    {deck:'irregular', front:"cut", back:"cut — cut", example:"couper", level:0, due:0},
+    {deck:'irregular', front:"do", back:"did — done", example:"faire", level:0, due:0},
+    {deck:'irregular', front:"drink", back:"drank — drunk", example:"boire", level:0, due:0},
+    {deck:'irregular', front:"drive", back:"drove — driven", example:"conduire", level:0, due:0},
+    {deck:'irregular', front:"eat", back:"ate — eaten", example:"manger", level:0, due:0},
+    {deck:'irregular', front:"fall", back:"fell — fallen", example:"tomber", level:0, due:0},
+    {deck:'irregular', front:"feel", back:"felt — felt", example:"ressentir", level:0, due:0},
+    {deck:'irregular', front:"find", back:"found — found", example:"trouver", level:0, due:0},
+    {deck:'irregular', front:"fly", back:"flew — flown", example:"voler", level:0, due:0},
+    {deck:'irregular', front:"forget", back:"forgot — forgotten", example:"oublier", level:0, due:0},
+    {deck:'irregular', front:"get", back:"got — got/gotten", example:"obtenir", level:0, due:0},
+    {deck:'irregular', front:"give", back:"gave — given", example:"donner", level:0, due:0},
+    {deck:'irregular', front:"go", back:"went — gone", example:"aller", level:0, due:0},
+    {deck:'irregular', front:"grow", back:"grew — grown", example:"grandir, cultiver", level:0, due:0},
+    {deck:'irregular', front:"have", back:"had — had", example:"avoir", level:0, due:0},
+    {deck:'irregular', front:"hear", back:"heard — heard", example:"entendre", level:0, due:0},
+    {deck:'irregular', front:"hold", back:"held — held", example:"tenir", level:0, due:0},
+    {deck:'irregular', front:"keep", back:"kept — kept", example:"garder", level:0, due:0},
+    {deck:'irregular', front:"know", back:"knew — known", example:"savoir, connaître", level:0, due:0},
+    {deck:'irregular', front:"leave", back:"left — left", example:"partir, laisser", level:0, due:0},
+    {deck:'irregular', front:"lose", back:"lost — lost", example:"perdre", level:0, due:0},
+    {deck:'irregular', front:"make", back:"made — made", example:"faire, fabriquer", level:0, due:0},
+    {deck:'irregular', front:"meet", back:"met — met", example:"rencontrer", level:0, due:0},
+    {deck:'irregular', front:"pay", back:"paid — paid", example:"payer", level:0, due:0},
+    {deck:'irregular', front:"put", back:"put — put", example:"mettre, poser", level:0, due:0},
+    {deck:'irregular', front:"read", back:"read — read", example:"lire (prononciation change)", level:0, due:0},
+    {deck:'irregular', front:"ride", back:"rode — ridden", example:"monter (à vélo, cheval)", level:0, due:0},
+    {deck:'irregular', front:"run", back:"ran — run", example:"courir", level:0, due:0},
+    {deck:'irregular', front:"say", back:"said — said", example:"dire", level:0, due:0},
+    {deck:'irregular', front:"see", back:"saw — seen", example:"voir", level:0, due:0},
+    {deck:'irregular', front:"sell", back:"sold — sold", example:"vendre", level:0, due:0},
+    {deck:'irregular', front:"send", back:"sent — sent", example:"envoyer", level:0, due:0},
+    {deck:'irregular', front:"show", back:"showed — shown", example:"montrer", level:0, due:0},
+    {deck:'irregular', front:"sing", back:"sang — sung", example:"chanter", level:0, due:0},
+    {deck:'irregular', front:"sit", back:"sat — sat", example:"s'asseoir", level:0, due:0},
+    {deck:'irregular', front:"sleep", back:"slept — slept", example:"dormir", level:0, due:0},
+    {deck:'irregular', front:"speak", back:"spoke — spoken", example:"parler", level:0, due:0},
+    {deck:'irregular', front:"spend", back:"spent — spent", example:"dépenser, passer (du temps)", level:0, due:0},
+    {deck:'irregular', front:"stand", back:"stood — stood", example:"se tenir debout", level:0, due:0},
+    {deck:'irregular', front:"swim", back:"swam — swum", example:"nager", level:0, due:0},
+    {deck:'irregular', front:"take", back:"took — taken", example:"prendre", level:0, due:0},
+    {deck:'irregular', front:"teach", back:"taught — taught", example:"enseigner", level:0, due:0},
+    {deck:'irregular', front:"tell", back:"told — told", example:"raconter, dire à quelqu'un", level:0, due:0},
+    {deck:'irregular', front:"think", back:"thought — thought", example:"penser", level:0, due:0},
+    {deck:'irregular', front:"throw", back:"threw — thrown", example:"lancer", level:0, due:0},
+    {deck:'irregular', front:"understand", back:"understood — understood", example:"comprendre", level:0, due:0},
+    {deck:'irregular', front:"wake", back:"woke — woken", example:"se réveiller", level:0, due:0},
+    {deck:'irregular', front:"wear", back:"wore — worn", example:"porter (vêtement)", level:0, due:0},
+    {deck:'irregular', front:"win", back:"won — won", example:"gagner", level:0, due:0},
+    {deck:'irregular', front:"write", back:"wrote — written", example:"écrire", level:0, due:0},
+    {deck:'irregular', front:"lend", back:"lent — lent", example:"prêter", level:0, due:0},
+    {deck:'irregular', front:"lie", back:"lay — lain", example:"être allongé (attention : to lie = mentir est régulier)", level:0, due:0},
+    {deck:'irregular', front:"shine", back:"shone — shone", example:"briller", level:0, due:0},
+    {deck:'irregular', front:"steal", back:"stole — stolen", example:"voler (dérober)", level:0, due:0},
+    {deck:'irregular', front:"strike", back:"struck — struck", example:"frapper", level:0, due:0},
+    {deck:'irregular', front:"tear", back:"tore — torn", example:"déchirer", level:0, due:0},
+    {deck:'irregular', front:"blow", back:"blew — blown", example:"souffler", level:0, due:0},
+    {deck:'irregular', front:"draw", back:"drew — drawn", example:"dessiner", level:0, due:0},
+    {deck:'irregular', front:"drop", back:"dropped — dropped", example:"laisser tomber (verbe régulier, piège fréquent)", level:0, due:0},
+    {deck:'irregular', front:"feed", back:"fed — fed", example:"nourrir", level:0, due:0},
+    {deck:'irregular', front:"fight", back:"fought — fought", example:"se battre", level:0, due:0},
+    {deck:'irregular', front:"forgive", back:"forgave — forgiven", example:"pardonner", level:0, due:0},
+    {deck:'irregular', front:"freeze", back:"froze — frozen", example:"geler", level:0, due:0},
+    {deck:'irregular', front:"hang", back:"hung — hung", example:"suspendre, accrocher", level:0, due:0},
+    {deck:'irregular', front:"hide", back:"hid — hidden", example:"cacher", level:0, due:0},
+    {deck:'irregular', front:"hit", back:"hit — hit", example:"frapper, heurter", level:0, due:0},
+    {deck:'irregular', front:"hurt", back:"hurt — hurt", example:"blesser", level:0, due:0},
+    {deck:'irregular', front:"lay", back:"laid — laid", example:"poser à plat (transitif — distinguer de 'lie')", level:0, due:0},
+    {deck:'irregular', front:"lead", back:"led — led", example:"mener, diriger", level:0, due:0},
+    {deck:'irregular', front:"light", back:"lit — lit", example:"allumer", level:0, due:0},
+    {deck:'irregular', front:"mean", back:"meant — meant", example:"signifier, vouloir dire", level:0, due:0},
+    {deck:'irregular', front:"ring", back:"rang — rung", example:"sonner", level:0, due:0},
+    {deck:'irregular', front:"rise", back:"rose — risen", example:"se lever, monter", level:0, due:0},
+    {deck:'irregular', front:"shoot", back:"shot — shot", example:"tirer (une arme)", level:0, due:0},
+    {deck:'irregular', front:"shut", back:"shut — shut", example:"fermer", level:0, due:0},
+    {deck:'irregular', front:"spread", back:"spread — spread", example:"étaler, propager", level:0, due:0},
+    {deck:'irregular', front:"spring", back:"sprang — sprung", example:"bondir", level:0, due:0},
+    {deck:'irregular', front:"swear", back:"swore — sworn", example:"jurer", level:0, due:0},
+    {deck:'irregular', front:"sweep", back:"swept — swept", example:"balayer", level:0, due:0},
+    {deck:'irregular', front:"swing", back:"swung — swung", example:"balancer", level:0, due:0},
+
+    // Prépositions dépendantes — phrases à trous
+    {deck:'prepositions', front:"douée en\nShe's good ___ maths.", back:"at", example:"good at = doué pour", level:0, due:0},
+    {deck:'prepositions', front:"avoir peur de\nHe's afraid ___ spiders.", back:"of", example:"afraid of = avoir peur de", level:0, due:0},
+    {deck:'prepositions', front:"intéressé par\nI'm interested ___ history.", back:"in", example:"interested in = intéressé par", level:0, due:0},
+    {deck:'prepositions', front:"marié à\nShe's married ___ a doctor.", back:"to", example:"married to = marié à", level:0, due:0},
+    {deck:'prepositions', front:"fier de\nI'm proud ___ you.", back:"of", example:"proud of = fier de", level:0, due:0},
+    {deck:'prepositions', front:"responsable de\nHe's responsible ___ the team.", back:"for", example:"responsible for = responsable de", level:0, due:0},
+    {deck:'prepositions', front:"similaire à\nThis is similar ___ what I said.", back:"to", example:"similar to = similaire à", level:0, due:0},
+    {deck:'prepositions', front:"différent de\nIt's different ___ before.", back:"from", example:"different from = différent de", level:0, due:0},
+    {deck:'prepositions', front:"dépendre de\nIt depends ___ the weather.", back:"on", example:"depend on = dépendre de", level:0, due:0},
+    {deck:'prepositions', front:"écouter\nI listen ___ podcasts every day.", back:"to", example:"listen to = écouter", level:0, due:0},
+    {deck:'prepositions', front:"regarder\nLook ___ this picture.", back:"at", example:"look at = regarder", level:0, due:0},
+    {deck:'prepositions', front:"chercher\nI'm looking ___ my keys.", back:"for", example:"look for = chercher", level:0, due:0},
+    {deck:'prepositions', front:"attendre\nWe waited ___ the bus.", back:"for", example:"wait for = attendre", level:0, due:0},
+    {deck:'prepositions', front:"s'excuser de\nI apologize ___ the delay.", back:"for", example:"apologize for = s'excuser de", level:0, due:0},
+    {deck:'prepositions', front:"postuler à\nShe applied ___ the job.", back:"for", example:"apply for = postuler à", level:0, due:0},
+    {deck:'prepositions', front:"croire en\nI believe ___ you.", back:"in", example:"believe in = croire en", level:0, due:0},
+    {deck:'prepositions', front:"appartenir à\nThis book belongs ___ me.", back:"to", example:"belong to = appartenir à", level:0, due:0},
+    {deck:'prepositions', front:"se plaindre de\nHe complained ___ the noise.", back:"about", example:"complain about = se plaindre de", level:0, due:0},
+    {deck:'prepositions', front:"se concentrer sur\nConcentrate ___ your work.", back:"on", example:"concentrate on = se concentrer sur", level:0, due:0},
+    {deck:'prepositions', front:"féliciter pour\nI congratulated her ___ her promotion.", back:"on", example:"congratulate on = féliciter pour", level:0, due:0},
+    {deck:'prepositions', front:"être composé de\nThe team consists ___ five people.", back:"of", example:"consist of = être composé de", level:0, due:0},
+    {deck:'prepositions', front:"traiter de\nThis chapter deals ___ grammar.", back:"with", example:"deal with = traiter de", level:0, due:0},
+    {deck:'prepositions', front:"être d'accord avec\nI agree ___ you.", back:"with", example:"agree with = être d'accord avec", level:0, due:0},
+    {deck:'prepositions', front:"se disputer à propos de\nThey argued ___ money.", back:"about", example:"argue about = se disputer à propos de", level:0, due:0},
+    {deck:'prepositions', front:"bénéficier de\nWe all benefit ___ exercise.", back:"from", example:"benefit from = bénéficier de", level:0, due:0},
+    {deck:'prepositions', front:"blâmer pour\nDon't blame me ___ that.", back:"for", example:"blame for = blâmer pour", level:0, due:0},
+    {deck:'prepositions', front:"capable de\nShe's capable ___ great things.", back:"of", example:"capable of = capable de", level:0, due:0},
+    {deck:'prepositions', front:"conscient de\nI'm aware ___ the risks.", back:"of", example:"aware of = conscient de", level:0, due:0},
+    {deck:'prepositions', front:"connu pour\nParis is famous ___ its museums.", back:"for", example:"famous for = connu pour", level:0, due:0},
+    {deck:'prepositions', front:"friand de, attaché à\nI'm quite fond ___ him.", back:"of", example:"fond of = attaché à", level:0, due:0},
+    {deck:'prepositions', front:"plein de\nThe room was full ___ people.", back:"of", example:"full of = plein de", level:0, due:0},
+    {deck:'prepositions', front:"insister pour\nShe insisted ___ paying.", back:"on", example:"insist on = insister pour", level:0, due:0},
+    {deck:'prepositions', front:"impliqué dans\nHe's involved ___ the project.", back:"in", example:"involved in = impliqué dans", level:0, due:0},
+    {deck:'prepositions', front:"passionné par\nI'm keen ___ hiking.", back:"on", example:"keen on = passionné par", level:0, due:0},
+    {deck:'prepositions', front:"payer pour\nI'll pay ___ dinner.", back:"for", example:"pay for = payer pour", level:0, due:0},
+    {deck:'prepositions', front:"empêcher de\nRain prevented us ___ going out.", back:"from", example:"prevent from = empêcher de", level:0, due:0},
+    {deck:'prepositions', front:"protéger de\nSunscreen protects your skin ___ UV.", back:"from", example:"protect from = protéger de", level:0, due:0},
+    {deck:'prepositions', front:"compter sur\nYou can rely ___ him.", back:"on", example:"rely on = compter sur", level:0, due:0},
+    {deck:'prepositions', front:"réussir à\nShe succeeded ___ passing the exam.", back:"in", example:"succeed in = réussir à", level:0, due:0},
+    {deck:'prepositions', front:"souffrir de\nHe suffers ___ allergies.", back:"from", example:"suffer from = souffrir de", level:0, due:0},
+    {deck:'prepositions', front:"penser à\nI'm thinking ___ my exam.", back:"about", example:"think about = penser à", level:0, due:0},
+    {deck:'prepositions', front:"avoir l'habitude de\nI'm used ___ waking up early.", back:"to", example:"used to = avoir l'habitude de", level:0, due:0},
+    {deck:'prepositions', front:"inquiet à propos de\nShe's worried ___ her exam.", back:"about", example:"worried about = inquiet à propos de", level:0, due:0},
+    {deck:'prepositions', front:"satisfait de\nI'm satisfied ___ the results.", back:"with", example:"satisfied with = satisfait de", level:0, due:0},
+    {deck:'prepositions', front:"fatigué de\nI'm tired ___ waiting.", back:"of", example:"tired of = fatigué de", level:0, due:0},
+    {deck:'prepositions', front:"enthousiaste à propos de\nWe're excited ___ the trip.", back:"about", example:"excited about = enthousiaste à propos de", level:0, due:0},
+    {deck:'prepositions', front:"doué avec\nShe's good ___ kids.", back:"with", example:"good with = doué avec", level:0, due:0},
+    {deck:'prepositions', front:"bondé de\nThe beach was crowded ___ tourists.", back:"with", example:"crowded with = bondé de", level:0, due:0},
+    {deck:'prepositions', front:"associé à\nSmoking is associated ___ cancer.", back:"with", example:"associated with = associé à", level:0, due:0},
+    {deck:'prepositions', front:"accuser de\nHe was accused ___ lying.", back:"of", example:"accuse of = accuser de", level:0, due:0},
+
+    // Faux amis (false friends)
+    {deck:'false_friends', front:"attend (piège) — que veut dire ce mot anglais ?", back:"assister à (PAS 'attendre' = to wait)", example:"I attended the meeting.", level:0, due:0},
+    {deck:'false_friends', front:"actually", back:"en fait (PAS 'actuellement' = currently/at the moment)", example:"Actually, I disagree.", level:0, due:0},
+    {deck:'false_friends', front:"eventually", back:"finalement, au bout du compte (PAS 'éventuellement' = possibly)", example:"We eventually arrived.", level:0, due:0},
+    {deck:'false_friends', front:"library", back:"bibliothèque (PAS 'librairie' = bookshop)", example:"I borrowed a book from the library.", level:0, due:0},
+    {deck:'false_friends', front:"sensible", back:"raisonnable, sensé (PAS 'sensible' = sensitive)", example:"That's a sensible decision.", level:0, due:0},
+    {deck:'false_friends', front:"deception", back:"tromperie (PAS 'déception' = disappointment)", example:"It was pure deception.", level:0, due:0},
+    {deck:'false_friends', front:"to demand", back:"exiger (PAS 'demander' poliment = to ask)", example:"She demanded an explanation.", level:0, due:0},
+    {deck:'false_friends', front:"to assist", back:"aider (PAS 'assister à' = to attend)", example:"He assisted me with the boxes.", level:0, due:0},
+    {deck:'false_friends', front:"to achieve", back:"accomplir, réussir (PAS 'achever' = to finish/complete)", example:"She achieved her dream.", level:0, due:0},
+    {deck:'false_friends', front:"to pretend", back:"faire semblant (PAS 'prétendre' = to claim)", example:"He pretended to be asleep.", level:0, due:0},
+    {deck:'false_friends', front:"large", back:"grand, vaste (PAS 'large' = wide)", example:"They live in a large house.", level:0, due:0},
+    {deck:'false_friends', front:"to introduce", back:"présenter (PAS seulement 'introduire' physiquement)", example:"Let me introduce my colleague.", level:0, due:0},
+    {deck:'false_friends', front:"a location", back:"un emplacement (PAS 'une location' = a rental)", example:"It's a great location.", level:0, due:0},
+    {deck:'false_friends', front:"a formation", back:"une formation géologique/structure (PAS 'une formation' professionnelle = training)", example:"a rock formation", level:0, due:0},
+    {deck:'false_friends', front:"a coin", back:"une pièce de monnaie (PAS 'un coin' = a corner)", example:"I found a coin on the floor.", level:0, due:0},
+    {deck:'false_friends', front:"a phrase", back:"une expression (PAS 'une phrase' = a sentence)", example:"It's a common phrase.", level:0, due:0},
+    {deck:'false_friends', front:"a car", back:"une voiture (PAS 'un car' = a coach/bus)", example:"I bought a new car.", level:0, due:0},
+    {deck:'false_friends', front:"to control", back:"maîtriser, commander (PAS toujours 'contrôler' = to check/verify)", example:"He controlled his anger.", level:0, due:0},
+    {deck:'false_friends', front:"a novel", back:"un roman (PAS 'une nouvelle' = a short story)", example:"She wrote a novel.", level:0, due:0},
+    {deck:'false_friends', front:"sympathetic", back:"compatissant (PAS 'sympathique' = nice/friendly)", example:"She was very sympathetic about my loss.", level:0, due:0},
+    {deck:'false_friends', front:"to realize", back:"se rendre compte (PAS 'réaliser' un projet = to achieve/carry out)", example:"I realized my mistake.", level:0, due:0},
+    {deck:'false_friends', front:"a chair", back:"une chaise (PAS 'une chair' = flesh)", example:"Sit on this chair.", level:0, due:0},
+    {deck:'false_friends', front:"to injure", back:"blesser physiquement (PAS 'injurier' = to insult)", example:"He injured his knee.", level:0, due:0},
+    {deck:'false_friends', front:"a préservatif — attention", back:"'preservative' = conservateur alimentaire (PAS un préservatif = a condom)", example:"This food has no preservatives.", level:0, due:0},
+    {deck:'false_friends', front:"a stage", back:"une scène de théâtre (PAS 'un stage' = an internship)", example:"She walked onto the stage.", level:0, due:0},
+    {deck:'false_friends', front:"to bless", back:"bénir (PAS 'blesser' = to injure/hurt)", example:"The priest blessed the couple.", level:0, due:0},
+    {deck:'false_friends', front:"a college", back:"souvent une université US (PAS forcément 'un collège' français = middle school)", example:"He goes to college.", level:0, due:0},
+    {deck:'false_friends', front:"to attend school", back:"aller à l'école, y être scolarisé (PAS 'attendre')", example:"She attends the local school.", level:0, due:0},
+    {deck:'false_friends', front:"a cave", back:"une grotte (PAS 'une cave' = a cellar)", example:"They explored a deep cave.", level:0, due:0},
+    {deck:'false_friends', front:"to pass an exam", back:"réussir un examen (PAS 'passer un examen' = to take/sit an exam)", example:"I hope I pass the exam.", level:0, due:0},
+    {deck:'false_friends', front:"a journey", back:"un trajet, un voyage (souvent terrestre) (PAS 'une journée' = a day)", example:"It was a long journey.", level:0, due:0},
+    {deck:'false_friends', front:"to support", back:"soutenir (PAS 'supporter' = to bear/put up with)", example:"I support your decision.", level:0, due:0},
+    {deck:'false_friends', front:"an occasion", back:"une occasion / un évènement (attention aux nuances) — mais 'bargain' = bonne affaire", example:"It was a special occasion.", level:0, due:0},
+    {deck:'false_friends', front:"eventually vs currently", back:"eventually = finalement ; currently = actuellement", example:"I'm currently working on it.", level:0, due:0},
+
+    // Expressions idiomatiques
+    {deck:'idioms', front:"it's raining cats and dogs", back:"il pleut des cordes", example:"Take an umbrella, it's raining cats and dogs.", level:0, due:0},
+    {deck:'idioms', front:"break the ice", back:"briser la glace", example:"He told a joke to break the ice.", level:0, due:0},
+    {deck:'idioms', front:"hit the nail on the head", back:"mettre le doigt dessus, taper juste", example:"You hit the nail on the head.", level:0, due:0},
+    {deck:'idioms', front:"under the weather", back:"patraque, pas dans son assiette", example:"I'm feeling a bit under the weather.", level:0, due:0},
+    {deck:'idioms', front:"once in a blue moon", back:"tous les 36 du mois", example:"We meet once in a blue moon.", level:0, due:0},
+    {deck:'idioms', front:"cost an arm and a leg", back:"coûter les yeux de la tête", example:"That car cost an arm and a leg.", level:0, due:0},
+    {deck:'idioms', front:"piece of cake", back:"du gâteau, très facile", example:"The exam was a piece of cake.", level:0, due:0},
+    {deck:'idioms', front:"let the cat out of the bag", back:"vendre la mèche", example:"He let the cat out of the bag.", level:0, due:0},
+    {deck:'idioms', front:"bite the bullet", back:"serrer les dents, prendre son courage à deux mains", example:"I decided to bite the bullet.", level:0, due:0},
+    {deck:'idioms', front:"the ball is in your court", back:"la balle est dans ton camp", example:"I've done my part, the ball is in your court.", level:0, due:0},
+    {deck:'idioms', front:"kill two birds with one stone", back:"faire d'une pierre deux coups", example:"This trip lets me kill two birds with one stone.", level:0, due:0},
+    {deck:'idioms', front:"speak of the devil", back:"quand on parle du loup", example:"Speak of the devil, here he is!", level:0, due:0},
+    {deck:'idioms', front:"see eye to eye", back:"être sur la même longueur d'onde", example:"We don't always see eye to eye.", level:0, due:0},
+    {deck:'idioms', front:"get out of hand", back:"devenir incontrôlable", example:"The party got out of hand.", level:0, due:0},
+    {deck:'idioms', front:"a blessing in disguise", back:"un mal pour un bien", example:"Losing that job was a blessing in disguise.", level:0, due:0},
+    {deck:'idioms', front:"beat around the bush", back:"tourner autour du pot", example:"Stop beating around the bush.", level:0, due:0},
+    {deck:'idioms', front:"call it a day", back:"s'arrêter là pour aujourd'hui", example:"Let's call it a day.", level:0, due:0},
+    {deck:'idioms', front:"cut corners", back:"rogner sur la qualité, bâcler", example:"They cut corners on safety.", level:0, due:0},
+    {deck:'idioms', front:"a piece of my mind", back:"donner son avis franchement (souvent avec colère)", example:"I gave him a piece of my mind.", level:0, due:0},
+    {deck:'idioms', front:"on the same page", back:"être d'accord, sur la même longueur d'onde", example:"Let's make sure we're on the same page.", level:0, due:0},
+    {deck:'idioms', front:"take it with a grain of salt", back:"prendre avec des pincettes", example:"Take his advice with a grain of salt.", level:0, due:0},
+    {deck:'idioms', front:"the last straw", back:"la goutte qui fait déborder le vase", example:"That was the last straw.", level:0, due:0},
+    {deck:'idioms', front:"jump on the bandwagon", back:"suivre la tendance, monter dans le train en marche", example:"Everyone jumped on the bandwagon.", level:0, due:0},
+    {deck:'idioms', front:"go the extra mile", back:"faire un effort supplémentaire", example:"She always goes the extra mile.", level:0, due:0},
+    {deck:'idioms', front:"burn the midnight oil", back:"travailler tard dans la nuit", example:"I've been burning the midnight oil.", level:0, due:0},
+    {deck:'idioms', front:"a piece of the pie", back:"une part du gâteau", example:"Everyone wants a piece of the pie.", level:0, due:0},
+    {deck:'idioms', front:"get cold feet", back:"avoir le trac, se dégonfler", example:"He got cold feet before the wedding.", level:0, due:0},
+    {deck:'idioms', front:"hit the sack", back:"aller se coucher", example:"I'm tired, time to hit the sack.", level:0, due:0},
+    {deck:'idioms', front:"miss the boat", back:"rater le coche", example:"If you don't apply now, you'll miss the boat.", level:0, due:0},
+    {deck:'idioms', front:"on thin ice", back:"sur un terrain glissant, en terrain dangereux", example:"You're on thin ice with your boss.", level:0, due:0},
+    {deck:'idioms', front:"pull yourself together", back:"se ressaisir", example:"Pull yourself together!", level:0, due:0},
+    {deck:'idioms', front:"the elephant in the room", back:"le sujet que tout le monde évite", example:"Let's address the elephant in the room.", level:0, due:0},
+    {deck:'idioms', front:"time flies", back:"le temps passe vite", example:"Time flies when you're having fun.", level:0, due:0},
+    {deck:'idioms', front:"a rule of thumb", back:"une règle générale", example:"As a rule of thumb, arrive early.", level:0, due:0},
+    {deck:'idioms', front:"back to square one", back:"revenir à la case départ", example:"We're back to square one.", level:0, due:0},
+    {deck:'idioms', front:"under the radar", back:"passer inaperçu", example:"The deal stayed under the radar.", level:0, due:0},
+    {deck:'idioms', front:"give someone the benefit of the doubt", back:"accorder le bénéfice du doute", example:"I'll give you the benefit of the doubt.", level:0, due:0}
+  ];
+
+  const INTERVALS_DAYS = [1, 2, 4, 7, 15, 30, 60];
+  const STORAGE_KEY = 'cards-v1';
+  const STREAK_KEY = 'streak-v1';
+
+  let cards = [];
+  let currentDeck = 'tenses';
+  let queue = [];
+  let currentCard = null;
+  let flipped = false;
+  let streak = { count:0, lastDay:null };
+
+  const el = id => document.getElementById(id);
+  const now = () => Date.now();
+  const dayMs = 86400000;
+
+  const PROGRAM_DAYS = 182; // ~6 months
+  let programStart = null;
+  let introToday = { date:null, perDeck:{} };
+
+  function uid(){ return 'c' + Math.random().toString(36).slice(2,10); }
+  function cardKey(c){ return c.deck + '|' + c.front; }
+
+  async function loadCards(){
+    let existing = [];
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw) existing = JSON.parse(raw);
+    } catch(e){ existing = []; }
+
+    if(existing.length === 0){
+      // Very first launch: introduce today's first batch, rest queued as "new"
+      cards = SEED.map(c => ({...c, id: uid(), introduced:false, due:null}));
+    } else {
+      // Migration: the format of 'phrasal' and 'prepositions' cards changed to
+      // fill-in-the-blank. Drop old-format cards from those decks that were never
+      // reviewed (no progress lost); keep any already introduced (real progress).
+      const reformattedDecks = new Set(['phrasal','prepositions']);
+      const newKeysByDeck = {};
+      SEED.forEach(c=>{
+        if(!newKeysByDeck[c.deck]) newKeysByDeck[c.deck] = new Set();
+        newKeysByDeck[c.deck].add(cardKey(c));
+      });
+      existing = existing.filter(c=>{
+        if(!reformattedDecks.has(c.deck)) return true;
+        const stillValid = newKeysByDeck[c.deck] && newKeysByDeck[c.deck].has(cardKey(c));
+        return stillValid || c.introduced;
+      });
+
+      // Merge: keep existing progress, append any SEED cards not already present
+      const seen = new Set(existing.map(cardKey));
+      const toAdd = SEED.filter(c => !seen.has(cardKey(c)))
+                         .map(c => ({...c, id: uid(), introduced:false, due:null}));
+      cards = existing.concat(toAdd);
+    }
+    await saveCards();
+  }
+
+  async function saveCards(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(cards)); }
+    catch(e){ console.error('save failed', e); }
+  }
+
+  async function loadStreak(){
+    try{
+      const raw = localStorage.getItem(STREAK_KEY);
+      if(raw){ streak = JSON.parse(raw); }
+    } catch(e){}
+    renderStreak();
+  }
+  async function saveStreak(){
+    try{ localStorage.setItem(STREAK_KEY, JSON.stringify(streak)); }catch(e){}
+  }
+  function bumpStreak(){
+    const today = new Date().toDateString();
+    if(streak.lastDay === today) return;
+    const yesterday = new Date(Date.now()-dayMs).toDateString();
+    streak.count = (streak.lastDay === yesterday) ? streak.count+1 : 1;
+    streak.lastDay = today;
+    saveStreak();
+    renderStreak();
+  }
+  function renderStreak(){
+    el('streakLabel').textContent = streak.count > 0 ? `🔥 ${streak.count} j.` : '';
+  }
+
+  async function loadProgram(){
+    try{
+      let raw = localStorage.getItem('program-start-v1');
+      if(!raw){ raw = String(now()); localStorage.setItem('program-start-v1', raw); }
+      programStart = parseInt(raw, 10);
+    } catch(e){ programStart = now(); }
+    try{
+      const raw2 = localStorage.getItem('intro-today-v1');
+      introToday = raw2 ? JSON.parse(raw2) : { date:null, perDeck:{}, reviews:0 };
+      if(!introToday.perDeck) introToday.perDeck = {};
+      if(typeof introToday.reviews !== 'number') introToday.reviews = 0;
+    } catch(e){ introToday = { date:null, perDeck:{}, reviews:0 }; }
+    const today = new Date().toDateString();
+    if(introToday.date !== today){ introToday = { date:today, perDeck:{}, reviews:0 }; saveIntroToday(); }
+    // Default pace: 10 new cards per theme per day (user-requested)
+    try{
+      if(getCustomPerDeck() === null){ setCustomPerDeck(10); }
+    } catch(e){}
+  }
+  function saveIntroToday(){
+    try{ localStorage.setItem('intro-today-v1', JSON.stringify(introToday)); }catch(e){}
+  }
+
+  function programDaysElapsed(){ return Math.max(1, Math.floor((now()-programStart)/dayMs)+1); }
+  function programDaysLeft(){ return Math.max(1, PROGRAM_DAYS - programDaysElapsed() + 1); }
+  function getCustomPerDeck(){
+    try{
+      const raw = localStorage.getItem('custom-per-deck-v1');
+      return raw ? parseInt(raw, 10) : null;
+    } catch(e){ return null; }
+  }
+  function setCustomPerDeck(n){
+    try{
+      if(n === null){ localStorage.removeItem('custom-per-deck-v1'); }
+      else { localStorage.setItem('custom-per-deck-v1', String(n)); }
+    } catch(e){}
+  }
+  function autoDeckBudget(deck){
+    const remaining = deckCards(deck).filter(c=>!c.introduced).length;
+    return Math.max(1, Math.ceil(remaining / programDaysLeft()));
+  }
+  function perDeckDailyBudget(deck){
+    const custom = getCustomPerDeck();
+    if(custom !== null) return Math.max(1, custom);
+    return autoDeckBudget(deck);
+  }
+  function todayIntroCountFor(deck){ return introToday.perDeck[deck] || 0; }
+  function todayIntroRemaining(deck){
+    return Math.max(0, perDeckDailyBudget(deck) - todayIntroCountFor(deck));
+  }
+  function todayIntroTotalDone(){
+    return Object.values(introToday.perDeck).reduce((a,b)=>a+b, 0);
+  }
+  function masteredCount(){ return cards.filter(c=>c.introduced && (c.level||0) >= 4).length; }
+
+  function deckCards(deck){ return cards.filter(c=>c.deck===deck); }
+  function dueCards(deck){ return deckCards(deck).filter(c => c.introduced && c.due <= now()); }
+  function newCards(deck){ return deckCards(deck).filter(c => !c.introduced); }
+
+  function renderCounts(){
+    Object.keys(DECKS).forEach(d=>{
+      const dueCount = dueCards(d).length;
+      const freshAvailable = Math.min(newCards(d).length, todayIntroRemaining(d));
+      const total = dueCount + freshAvailable;
+      el('cnt-' + d).textContent = total + ' à revoir';
+    });
+  }
+
+  function buildQueue(){
+    const due = dueCards(currentDeck).sort((a,b)=>a.due-b.due);
+    const budget = todayIntroRemaining(currentDeck);
+    const fresh = newCards(currentDeck).slice(0, budget);
+    queue = due.concat(fresh);
+  }
+
+  function showToast(msg){
+    const t = el('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 1600);
+  }
+
+  function renderStage(){
+    const wrap = el('stageWrap');
+    buildQueue();
+    renderCounts();
+
+    if(queue.length === 0){
+      currentCard = null;
+      el('answers').classList.add('hidden');
+      el('flipHint').style.visibility = 'hidden';
+      const total = deckCards(currentDeck).length;
+      const remainingNew = newCards(currentDeck).length;
+      let big, small;
+      if(total === 0){
+        big = "Ce paquet est vide"; small = "Ajoute ta première carte.";
+      } else if(remainingNew > 0){
+        big = "Quota du jour atteint ✓"; small = `${remainingNew} nouvelle${remainingNew>1?'s':''} carte${remainingNew>1?'s':''} en attente pour demain.`;
+      } else {
+        big = "Tout est révisé ✓"; small = "Reviens plus tard pour la suite.";
+      }
+      wrap.innerHTML = `<div class="empty-state">
+        <div class="big">${big}</div>
+        <div>${small}</div>
+      </div>`;
+      el('dueBanner').textContent = DECKS[currentDeck].label;
+      return;
+    }
+
+    currentCard = queue[0];
+    flipped = false;
+    el('dueBanner').textContent = `${DECKS[currentDeck].label} — ${queue.length} carte${queue.length>1?'s':''} à revoir`;
+    el('flipHint').style.visibility = 'visible';
+    el('answers').classList.add('hidden');
+
+    const level = currentCard.level || 0;
+    const dots = Array.from({length:5}, (_,i)=>`<span class="${i<level?'on':''}"></span>`).join('');
+
+    wrap.innerHTML = `
+      <div class="stage">
+        <div class="card" id="cardEl">
+          <div class="face front">
+            <div class="kicker">${DECKS[currentDeck].label}</div>
+            <div class="level-dots">${dots}</div>
+            <div class="content">${escapeHtml(currentCard.front).replace(/\n/g,'<br>')}</div>
+          </div>
+          <div class="face back">
+            <div class="kicker">Réponse</div>
+            <div class="content">${escapeHtml(currentCard.back)}</div>
+            ${currentCard.example ? `<div class="example">${escapeHtml(currentCard.example)}</div>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+    el('cardEl').addEventListener('click', flipCard);
+  }
+
+  function flipCard(){
+    if(!currentCard) return;
+    flipped = !flipped;
+    el('cardEl').classList.toggle('flipped', flipped);
+    if(flipped){
+      el('answers').classList.remove('hidden');
+      el('flipHint').style.visibility = 'hidden';
+    } else {
+      el('answers').classList.add('hidden');
+      el('flipHint').style.visibility = 'visible';
+    }
+  }
+
+  function grade(result){
+    if(!currentCard) return;
+    if(!currentCard.introduced){
+      currentCard.introduced = true;
+      introToday.perDeck[currentCard.deck] = (introToday.perDeck[currentCard.deck] || 0) + 1;
+    } else {
+      introToday.reviews = (introToday.reviews || 0) + 1;
+    }
+    saveIntroToday();
+    let level = currentCard.level || 0;
+    if(result === 'again'){
+      level = 0;
+      currentCard.level = level;
+      currentCard.due = now() + 3*60*1000; // resurfaces in ~3 minutes, same session
+      saveCards();
+      bumpStreak();
+      renderStage();
+      return;
+    }
+    else if(result === 'good'){ level = Math.min(level+1, INTERVALS_DAYS.length-1); }
+    else if(result === 'easy'){ level = Math.min(level+2, INTERVALS_DAYS.length-1); }
+    currentCard.level = level;
+    const days = INTERVALS_DAYS[level];
+    currentCard.due = now() + days*dayMs;
+    saveCards();
+    bumpStreak();
+    renderStage();
+  }
+
+  function escapeHtml(s){
+    return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  // Tabs
+  el('tabs').addEventListener('click', (e)=>{
+    const btn = e.target.closest('.tab');
+    if(!btn) return;
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    btn.classList.add('active');
+    currentDeck = btn.dataset.deck;
+    renderStage();
+  });
+
+  // Answer buttons
+  el('btnAgain').addEventListener('click', ()=>grade('again'));
+  el('btnGood').addEventListener('click', ()=>grade('good'));
+  el('btnEasy').addEventListener('click', ()=>grade('easy'));
+
+  // Add card modal
+  function openAddModal(prefillDeck){
+    const root = el('modalRoot');
+    root.innerHTML = `
+      <div class="modal-backdrop" id="backdrop">
+        <div class="modal">
+          <button class="modal-close" id="closeModal">✕</button>
+          <h2>Nouvelle carte</h2>
+          <div class="deck-picker" id="deckPicker">
+            ${Object.keys(DECKS).map(d=>`<button data-d="${d}" class="${d===prefillDeck?'active':''}">${DECKS[d].label}</button>`).join('')}
+          </div>
+          <div class="field">
+            <label>Recto (question)</label>
+            <textarea id="fFront" placeholder="ex : deal with"></textarea>
+          </div>
+          <div class="field">
+            <label>Verso (réponse)</label>
+            <textarea id="fBack" placeholder="ex : gérer, s'occuper de"></textarea>
+          </div>
+          <div class="field">
+            <label>Exemple (optionnel)</label>
+            <input id="fExample" placeholder="ex : I need to deal with this.">
+          </div>
+          <div class="modal-actions">
+            <button class="btn-secondary" id="cancelAdd">Annuler</button>
+            <button class="btn-primary" id="saveAdd">Ajouter</button>
+          </div>
+        </div>
+      </div>
+    `;
+    let selectedDeck = prefillDeck;
+    root.querySelectorAll('#deckPicker button').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        root.querySelectorAll('#deckPicker button').forEach(x=>x.classList.remove('active'));
+        b.classList.add('active');
+        selectedDeck = b.dataset.d;
+      });
+    });
+    el('closeModal').addEventListener('click', closeModal);
+    el('cancelAdd').addEventListener('click', closeModal);
+    el('backdrop').addEventListener('click', (e)=>{ if(e.target.id==='backdrop') closeModal(); });
+    el('saveAdd').addEventListener('click', async ()=>{
+      const front = el('fFront').value.trim();
+      const back = el('fBack').value.trim();
+      const example = el('fExample').value.trim();
+      if(!front || !back){ showToast('Recto et verso requis'); return; }
+      cards.push({ id: uid(), deck: selectedDeck, front, back, example, level:0, due: now(), introduced:true });
+      await saveCards();
+      closeModal();
+      showToast('Carte ajoutée');
+      Object.keys(DECKS).forEach(d=>{
+        document.querySelector(`.tab[data-deck="${d}"]`).classList.toggle('active', d===selectedDeck);
+      });
+      currentDeck = selectedDeck;
+      renderStage();
+    });
+  }
+  function closeModal(){ el('modalRoot').innerHTML = ''; }
+  el('addBtn').addEventListener('click', ()=>openAddModal(currentDeck));
+
+  // Manage modal
+  function openManageModal(){
+    const root = el('modalRoot');
+    function listHtml(){
+      return Object.keys(DECKS).map(d=>{
+        const items = deckCards(d);
+        if(items.length===0) return '';
+        return `<div style="margin-bottom:10px;">
+          <div class="field"><label>${DECKS[d].label} (${items.length})</label></div>
+          ${items.map(c=>`
+            <div class="manage-item" data-id="${c.id}">
+              <div class="txt"><b>${escapeHtml(c.front)}</b><span>${escapeHtml(c.back)}</span></div>
+              <button class="del-btn" data-id="${c.id}">🗑</button>
+            </div>
+          `).join('')}
+        </div>`;
+      }).join('') || '<p style="color:var(--ink-soft)">Aucune carte pour le moment.</p>';
+    }
+    root.innerHTML = `
+      <div class="modal-backdrop" id="backdrop2">
+        <div class="modal">
+          <button class="modal-close" id="closeModal2">✕</button>
+          <h2>Gérer les cartes</h2>
+          <div class="manage-list" id="manageList">${listHtml()}</div>
+        </div>
+      </div>
+    `;
+    el('closeModal2').addEventListener('click', closeModal);
+    el('backdrop2').addEventListener('click', (e)=>{ if(e.target.id==='backdrop2') closeModal(); });
+    function bindDeleteButtons(){
+      root.querySelectorAll('.del-btn').forEach(b=>{
+        b.addEventListener('click', async ()=>{
+          const id = b.dataset.id;
+          cards = cards.filter(c=>c.id!==id);
+          await saveCards();
+          el('manageList').innerHTML = listHtml();
+          bindDeleteButtons();
+          renderStage();
+        });
+      });
+    }
+    bindDeleteButtons();
+  }
+  el('manageBtn').addEventListener('click', openManageModal);
+
+  const DECK_COLORS = {
+    tenses:'#C4544A', vocab:'#4C7A5E', phrasal:'#4A6FA5',
+    irregular:'#B8863B', prepositions:'#3F8F86', false_friends:'#7A5C8E', idioms:'#A54B70'
+  };
+
+  // Approximate CEFR difficulty tier per theme (1=B1 .. 5=C1) — indicative, not certified
+  const DECK_CEFR = {
+    irregular: 1,       // B1 — base vocabulaire grammatical
+    prepositions: 2,    // B1+
+    vocab: 3,           // B2
+    phrasal: 3,         // B2
+    tenses: 3,          // B2 (avec nuances C1)
+    false_friends: 4,   // B2+
+    idioms: 5           // C1
+  };
+  const CEFR_LABELS = ['B1','B1+','B2','B2+','C1'];
+
+  function cefrEstimate(){
+    // Weighted mastery: mastering higher-tier decks pulls the estimate further toward C1.
+    let maxWeighted = 0, curWeighted = 0;
+    Object.keys(DECKS).forEach(d=>{
+      const tier = DECK_CEFR[d] || 3;
+      const total = deckCards(d).length;
+      const mastered = deckCards(d).filter(c=>c.introduced && (c.level||0)>=4).length;
+      maxWeighted += tier * total;
+      curWeighted += tier * mastered;
+    });
+    const ratio = maxWeighted > 0 ? (curWeighted / maxWeighted) : 0;
+    // Start baseline at B1+ (index 1), progress toward C1 (index 4) as ratio grows.
+    const numeric = 1 + 3 * Math.min(1, ratio); // 1..4 → maps to CEFR_LABELS index 1..4
+    const idx = Math.max(0, Math.min(4, Math.round(numeric)));
+    return { idx, ratio, label: CEFR_LABELS[idx] };
+  }
+
+  // Programme modal
+  function openProgramModal(){
+    const root = el('modalRoot');
+    const totalCards = cards.length;
+    const introduced = cards.filter(c=>c.introduced).length;
+    const mastered = masteredCount();
+    const cefr = cefrEstimate();
+    const daysElapsed = programDaysElapsed();
+    const daysLeft = programDaysLeft();
+    const perDeckBudget = perDeckDailyBudget('tenses'); // representative display value
+    const isCustom = getCustomPerDeck() !== null;
+    const doneTodayNew = todayIntroTotalDone();
+    const doneTodayReviews = introToday.reviews || 0;
+    const pct = totalCards ? Math.round((introduced/totalCards)*100) : 0;
+    const masteredPct = totalCards ? Math.round((mastered/totalCards)*100) : 0;
+
+    const deckRows = Object.keys(DECKS).map(d=>{
+      const t = deckCards(d).length;
+      const i = deckCards(d).filter(c=>c.introduced).length;
+      const due = dueCards(d).length;
+      const budget = perDeckDailyBudget(d);
+      const doneD = todayIntroCountFor(d);
+      const dp = t ? Math.round((i/t)*100) : 0;
+      const color = DECK_COLORS[d];
+      return `
+        <div style="margin-bottom:12px;">
+          <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:3px;">
+            <b style="color:var(--ink);">${DECKS[d].label}</b>
+            <span style="color:var(--ink-soft);">${i}/${t}${due>0 ? ` · ${due} à revoir` : ''}</span>
+          </div>
+          <div style="background:#fff;border:1px solid rgba(34,49,70,0.15);border-radius:6px;height:10px;overflow:hidden;">
+            <div style="width:${dp}%;background:${color};height:100%;"></div>
+          </div>
+          <div style="font-size:0.76rem;color:var(--ink-soft);margin-top:2px;">Aujourd'hui : ${doneD}/${budget} nouvelles</div>
+        </div>`;
+    }).join('');
+
+    root.innerHTML = `
+      <div class="modal-backdrop" id="backdropP">
+        <div class="modal">
+          <button class="modal-close" id="closeModalP">✕</button>
+          <h2>Programme &amp; score</h2>
+          <p style="color:var(--ink-soft); font-size:0.92rem; margin-top:-6px;">
+            Jour ${daysElapsed} sur ~${PROGRAM_DAYS} (${daysLeft} jours restants) ${streak.count>0 ? `· 🔥 ${streak.count} j.` : ''}
+          </p>
+
+          <div style="display:flex; gap:10px; margin:14px 0;">
+            <div style="flex:1; background:#fff; border:1px solid rgba(34,49,70,0.12); border-radius:10px; padding:12px; text-align:center;">
+              <div style="font-family:'Caveat',cursive; font-size:1rem; font-weight:400; color:var(--ink-soft);">Aujourd'hui</div>
+              <div style="font-size:1.4rem; font-weight:700; color:var(--pen-red);">${doneTodayNew + doneTodayReviews}</div>
+              <div style="font-size:0.72rem; color:var(--ink-soft);">${doneTodayNew} nouvelles · ${doneTodayReviews} révisions</div>
+            </div>
+            <div style="flex:1; background:#fff; border:1px solid rgba(34,49,70,0.12); border-radius:10px; padding:12px; text-align:center;">
+              <div style="font-family:'Caveat',cursive; font-size:1rem; font-weight:400; color:var(--ink-soft);">Maîtrisées</div>
+              <div style="font-size:1.4rem; font-weight:700; color:var(--pen-green, #4C7A5E);">${mastered}</div>
+              <div style="font-size:0.72rem; color:var(--ink-soft);">${masteredPct}% du total</div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Niveau estimé (indicatif — pas un test certifié)</label>
+            <div style="position:relative; height:34px; margin-top:8px;">
+              <div style="position:absolute; top:14px; left:0; right:0; height:6px; border-radius:3px; background:linear-gradient(90deg, #C4544A, #B8863B, #4C7A5E, #3F8F86, #A54B70);"></div>
+              <div style="position:absolute; top:0; left:${cefr.idx*25}%; transform:translateX(-50%); text-align:center;">
+                <div style="font-size:1.3rem; line-height:1;">📍</div>
+              </div>
+              <div style="position:absolute; top:0; left:100%; transform:translateX(-100%); text-align:center;">
+                <div style="font-size:0.9rem;">🎯</div>
+              </div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:var(--ink-soft); margin-top:2px;">
+              ${CEFR_LABELS.map(l=>`<span>${l}</span>`).join('')}
+            </div>
+            <div style="font-size:0.85rem; margin-top:8px;">Position actuelle : <b>${cefr.label}</b> — objectif : <b>C1</b> (B2+ minimum visé)</div>
+          </div>
+
+          <div class="field">
+            <label>Progression globale — ${introduced} / ${totalCards} cartes découvertes (${pct}%)</label>
+            <div style="background:#fff;border:1px solid rgba(34,49,70,0.15);border-radius:8px;height:14px;overflow:hidden;">
+              <div style="width:${pct}%;background:var(--pen-red);height:100%;"></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Cartes neuves par thème et par jour ${isCustom ? '(réglage manuel)' : '(calcul automatique)'}</label>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <input type="number" id="perDayInput" min="1" max="200" value="${perDeckBudget}" style="width:90px; padding:8px 10px; border-radius:8px; border:1px solid rgba(34,49,70,0.18); font-family:Georgia,serif;">
+              <button class="btn-primary" id="savePerDay" style="flex:0 0 auto; padding:9px 14px; border-radius:8px; border:none; font-family:'Marker Felt','Segoe Print','Comic Sans MS',cursive; cursor:pointer;">Valider</button>
+            </div>
+            <div style="font-size:0.82rem;color:var(--ink-soft);margin-top:6px;">${isCustom ? `Rythme fixé manuellement — <a href="#" id="resetPerDay" style="color:var(--pen-red);">revenir au calcul automatique</a>` : "S'ajuste chaque jour selon ce qu'il reste à découvrir."}</div>
+          </div>
+
+          <div class="field">
+            <label>Détail par thème</label>
+            ${deckRows}
+          </div>
+        </div>
+      </div>
+    `;
+    el('closeModalP').addEventListener('click', closeModal);
+    el('backdropP').addEventListener('click', (e)=>{ if(e.target.id==='backdropP') closeModal(); });
+    el('savePerDay').addEventListener('click', ()=>{
+      const v = parseInt(el('perDayInput').value, 10);
+      if(!v || v < 1){ showToast('Entre un nombre valide'); return; }
+      setCustomPerDeck(v);
+      showToast(`Rythme fixé à ${v} carte${v>1?'s':''}/thème/jour`);
+      closeModal();
+      renderStage();
+    });
+    const resetLink = el('resetPerDay');
+    if(resetLink){
+      resetLink.addEventListener('click', (e)=>{
+        e.preventDefault();
+        setCustomPerDeck(null);
+        showToast('Rythme automatique rétabli');
+        closeModal();
+        renderStage();
+      });
+    }
+  }
+  el('programBtn').addEventListener('click', openProgramModal);
+
+  // Init
+  (async function init(){
+    el('dueBanner').textContent = 'Chargement…';
+    await loadCards();
+    await loadStreak();
+    await loadProgram();
+    renderStage();
+  })();
+})();
+</script>
+</body>
+</html>
